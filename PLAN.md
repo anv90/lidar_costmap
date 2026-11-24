@@ -125,7 +125,16 @@ Static transform conventions (apply to every static transform in both launch fil
 Build and check each layer before the next.
 
 ### 4.1 Fake LiDAR
-- [ ] Publishes `LaserScan` on `/scan` at 5.5 Hz: `frame_id: laser`, `angle_min = -π`, `angle_max = π`, 360 beams (`angle_increment = 2π/360`), `range_min = 0.15`, `range_max = 12.0`, `scan_time = 1/5.5`
+- [ ] Publishes `LaserScan` on `/scan` matching the **recorded** real A1 message (firmware 1.29, Sensitivity mode, 8 kHz;
+      recorded 2026-11-24 with `ros2 topic echo /scan --once --no-arr`):
+      `frame_id: laser`, `angle_min = -π`, `angle_max = π`, **1080 beams**,
+      `angle_increment = (angle_max − angle_min) / (num_beams − 1)` = 2π/1079 ≈ 0.0058232 rad (both ±π endpoints are included),
+      `range_min = 0.05` (what the driver reports; the datasheet's reliable minimum is 0.15 m), `range_max = 12.0`,
+      `scan_time = 1/scan_rate`, `time_increment = scan_time / num_beams`
+- [ ] Also fill `intensities` with one value per beam (e.g. 47.0 for hits, 0.0 for no return); the real driver publishes 1080 of them
+- [ ] Parameters (so the fake LiDAR can be re-matched to another unit without code changes):
+      `scan_rate` default **7.5** Hz (measured with `ros2 topic hz /scan`; `scan_time` in the recorded message was 0.136 s ≈ 7.3 Hz;
+      datasheet range 1–10 Hz), `num_beams` default **1080**
 - [ ] Beams that hit nothing report `inf` (matches the real driver, to be confirmed in Phase 6)
 - [ ] Obstacles are circles (center, radius 0.10 m) and line segments (walls); each beam's range = nearest ray intersection
 - [ ] Optional parameter `noise_pct` (default 0) adds Gaussian noise of that % of range
@@ -160,7 +169,7 @@ Build and check each layer before the next.
 
 **Done when:**
 - With `sim_testbench.launch.py` running, `ros2 run lidar_costmap test_script` runs all 6 scenarios and prints the full table (passing not yet required)
-- `ros2 topic hz /scan` ≈ 5.5 Hz while the script runs
+- `ros2 topic hz /scan` ≈ 7.5 Hz (the `scan_rate` parameter) while the script runs
 - `check_scan` runs against the fake `/scan` (e.g. `test_script --ros-args -p scenario:=single_obstacle -p interactive:=true`) and reports ≈1.00 m at ≈0°
 
 ---
@@ -180,7 +189,7 @@ Claude Code may prepare a checklist; the student runs it.
 - [ ] `ls /dev/ttyUSB*` shows the LiDAR; fix permissions if needed (`dialout` group)
 - [ ] `ros2 launch sllidar_ros2 sllidar_a1_launch.py`: motor spins; log shows serial number, firmware, health OK, no errors
 - [ ] `ros2 topic info /scan` → LaserScan, 1 publisher; `ros2 topic echo /scan --once --no-arr` → `frame_id: laser`, angles ≈ ±3.14; record `range_min`/`range_max`
-- [ ] `ros2 topic hz /scan` ≈ 5.5 Hz
+- [ ] `ros2 topic hz /scan` between 5 and 10 Hz (measured 7.5 Hz on 2026-11-24)
 - [ ] Box 1.00 m in front (measured to the rotation axis): `ros2 run lidar_costmap check_scan` → 1.00 ± 0.02 m; record the angle (sets `laser_yaw`)
 - [ ] Check how the real driver reports "no return" (`inf` vs 0 vs `range_max`). If it differs from Phase 4.1, update the fake LiDAR and re-run Phase 5
 - [ ] `ros2 launch lidar_costmap hardware.launch.py use_rviz:=true`: the box appears in the costmap at ≈1.00 m
@@ -190,7 +199,7 @@ Claude Code may prepare a checklist; the student runs it.
 ## Phase 7 — [MANUAL] Jetson Orin Nano deployment
 - [ ] Build `lidar_costmap` in the Jetson's Jazzy environment (Docker or source — match the team's setup)
 - [ ] Run `test_script` on the Jetson → `ALL TESTS PASSED`
-- [ ] Run `hardware.launch.py` with the real LiDAR; `ros2 topic hz` on `/scan` (≈5.5 Hz) and `/local_costmap/costmap` (≈5 Hz)
+- [ ] Run `hardware.launch.py` with the real LiDAR; `ros2 topic hz` on `/scan` (≈7.5 Hz) and `/local_costmap/costmap` (≈5 Hz)
 - [ ] Record CPU load (`jtop`) with other blocks running
 
 ---
