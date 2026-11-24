@@ -46,7 +46,7 @@ lidar_costmap/
 | | Property | Value |
 |---|---|---|
 | data_in | Physical | USB serial, 115200 baud 8N1, Slamtec binary packets (datasheet Fig. 2-5) |
-| data_in | ROS topic | `/scan`, `sensor_msgs/msg/LaserScan`, `frame_id: laser`, ~5.5 Hz, 360° |
+| data_in | ROS topic | `/scan`, `sensor_msgs/msg/LaserScan`, `frame_id: laser`, ~7.5 Hz measured (datasheet 1–10 Hz, 5.5 typical), 360°, 8 kHz sampling |
 | data_out | ROS topic | `/local_costmap/costmap`, `nav_msgs/msg/OccupancyGrid` |
 | data_out | Rate | 5 Hz (`publish_frequency` = `update_frequency` = 5.0) |
 | data_out | Frame / grid | `frame_id: odom`, rolling window 3 m × 3 m, resolution 0.05 m (60 × 60 cells) |
